@@ -24,11 +24,27 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (tokenData, userData) => {
+  const login = async (tokenData, userData) => {
     localStorage.setItem('token', tokenData);
     localStorage.setItem('user', JSON.stringify(userData));
     setToken(tokenData);
     setUser(userData);
+    
+    // Fetch full user data with purchases after login
+    try {
+      const response = await axios.get(`${API}/analytics/user`, {
+        headers: { Authorization: `Bearer ${tokenData}` }
+      });
+      const userResponse = await axios.get(`${API}/tests`, {
+        headers: { Authorization: `Bearer ${tokenData}` }
+      });
+      // Update user in local storage with backend data
+      const fullUserData = { ...userData, purchasedTests: [] };
+      localStorage.setItem('user', JSON.stringify(fullUserData));
+      setUser(fullUserData);
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+    }
   };
 
   const logout = () => {
