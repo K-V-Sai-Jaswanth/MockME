@@ -24,26 +24,26 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (tokenData, userData) => {
+  const login = (tokenData, userData) => {
     localStorage.setItem('token', tokenData);
     localStorage.setItem('user', JSON.stringify(userData));
     setToken(tokenData);
     setUser(userData);
-    
-    // Fetch full user data with purchases after login
+  };
+
+  const refreshUser = async () => {
+    if (!token) return;
     try {
-      const response = await axios.get(`${API}/analytics/user`, {
-        headers: { Authorization: `Bearer ${tokenData}` }
+      // Fetch purchases to update user's purchased tests
+      const purchases = await axios.get(`${API}/purchases/history`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      const userResponse = await axios.get(`${API}/tests`, {
-        headers: { Authorization: `Bearer ${tokenData}` }
-      });
-      // Update user in local storage with backend data
-      const fullUserData = { ...userData, purchasedTests: [] };
-      localStorage.setItem('user', JSON.stringify(fullUserData));
-      setUser(fullUserData);
+      const purchasedTestIds = purchases.data.map(p => p.testId).filter(Boolean);
+      const updatedUser = { ...user, purchasedTests: purchasedTestIds };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
     } catch (error) {
-      console.error('Failed to fetch user data:', error);
+      console.error('Failed to refresh user data:', error);
     }
   };
 
